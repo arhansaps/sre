@@ -1,0 +1,51 @@
+groups:
+  - name: service_alerts
+    interval: 30s
+    rules:
+
+      - alert: HighPaymentFailureRate
+        expr: |
+          rate(payment_failures_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          service: payment-service
+        annotations:
+          summary: "Payment failure rate spike detected"
+          description: "Payment failures > 10% over last 5 min. Current: {{ $value | printf \"%.2f\" }}/s"
+
+      - alert: HighOrderLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(order_request_duration_seconds_bucket[5m])
+          ) > 2.0
+        for: 2m
+        labels:
+          severity: warning
+          service: order-service
+        annotations:
+          summary: "Order service p95 latency > 2s"
+          description: "p95 latency is {{ $value | printf \"%.2f\" }}s"
+
+      - alert: InventoryServiceDown
+        expr: |
+          up{job="inventory-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: inventory-service
+        annotations:
+          summary: "Inventory service is unreachable"
+          description: "Prometheus cannot scrape inventory-service"
+
+      - alert: OrderSuccessRateDrop
+        expr: |
+          rate(orders_successful_total[5m]) /
+          (rate(orders_successful_total[5m]) + rate(orders_failed_total[5m])) < 0.8
+        for: 1m
+        labels:
+          severity: warning
+          service: order-service
+        annotations:
+          summary: "Order success rate dropped below 80%"
+          description: "Success rate: {{ $value | printf \"%.1%\" }}"

@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "order-service"
+    static_configs:
+      - targets: ["order-service:8001"]
+    metrics_path: /metrics
+
+  - job_name: "payment-service"
+    static_configs:
+      - targets: ["payment-service:8002"]
+    metrics_path: /metrics
+
+  - job_name: "inventory-service"
+    static_configs:
+      - targets: ["inventory-service:8003"]
+    metrics_path: /metrics
+
+  - job_name: "otel-collector"
+    static_configs:
+      - targets: ["otel-collector:8888"]
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+# Alerting rules — these will later trigger your agent
+rule_files:
+  - "alerts.yml"
