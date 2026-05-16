@@ -1,0 +1,16 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: incident-autopilot
+  group_by: ["alertname", "service"]
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: incident-autopilot
+    webhook_configs:
+      # Producer runs on the host (python -m pipeline.producer)
+      - url: "http://host.docker.internal:8080/webhook/prometheus"
+        send_resolved: true
