@@ -17,6 +17,10 @@ import asyncio
 import subprocess
 import httpx
 
+
+# the services are the docker containers
+#mapped to their local URLs
+
 SERVICES = {
     "order-service": "http://localhost:8001",
     "payment-service": "http://localhost:8002",
@@ -25,7 +29,7 @@ SERVICES = {
 
 
 def set_env(service: str, failure_rate: int = 0, latency_ms: int = 0):
-    """Update a running container's environment variables."""
+    """Update a running container's environment variables. live surgery type shit"""
     subprocess.run([
         "docker", "update",
         f"--env", f"FAILURE_RATE={failure_rate}",
@@ -69,11 +73,16 @@ async def send_orders(n: int = 20):
     return success, fail
 
 
+async def _check_all_services():
+    """Gather health checks (asyncio.run needs a coroutine, not a Future)."""
+    return await asyncio.gather(*[
+        check_health(n, u) for n, u in SERVICES.items()
+    ])
+
+
 def cmd_status():
     print("\n── Service health ──────────────────────────────")
-    results = asyncio.run(asyncio.gather(*[
-        check_health(n, u) for n, u in SERVICES.items()
-    ]))
+    results = asyncio.run(_check_all_services())
     for r in results:
         icon = "✓" if r["status"] == "healthy" else "✗"
         print(f"  {icon} {r['service']}: {r['status']}")
