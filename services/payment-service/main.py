@@ -45,7 +45,6 @@ class ChargeRequest(BaseModel):
 
 
 def get_failure_rate() -> int:
-    """Read failure rate at runtime so you can change it without restart."""
     try:
         return int(os.getenv("FAILURE_RATE", "0"))
     except ValueError:

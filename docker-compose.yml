@@ -38,8 +38,8 @@ services:
     environment:
       - SERVICE_NAME=payment-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - FAILURE_RATE=0        # set to 0-100 to inject failures
-      - LATENCY_MS=0          # set to inject artificial latency
+      - FAILURE_RATE=${FAILURE_RATE:-0}
+      - LATENCY_MS=${LATENCY_MS:-0}
     networks:
       - autopilot-net
     depends_on:
@@ -53,8 +53,8 @@ services:
     environment:
       - SERVICE_NAME=inventory-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - FAILURE_RATE=0
-      - LATENCY_MS=0
+      - FAILURE_RATE=${FAILURE_RATE:-0}
+      - LATENCY_MS=${LATENCY_MS:-0}
     networks:
       - autopilot-net
     depends_on:

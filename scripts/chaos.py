@@ -11,6 +11,7 @@ Usage:
   python scripts/chaos.py status            # show current health of all services
 """
 
+import os
 import sys
 import time
 import asyncio
@@ -29,15 +30,14 @@ SERVICES = {
 
 
 def set_env(service: str, failure_rate: int = 0, latency_ms: int = 0):
-    """Update a running container's environment variables. live surgery type shit"""
-    subprocess.run([
-        "docker", "update",
-        f"--env", f"FAILURE_RATE={failure_rate}",
-        f"--env", f"LATENCY_MS={latency_ms}",
-        service
-    ], check=True, capture_output=True)
-    # Restart to pick up new env (FastAPI reads env at startup for simplicity)
-    subprocess.run(["docker", "restart", service], check=True, capture_output=True)
+    """Recreate (RESTART NOT RUNTIMEEE) a container with new env vars by using docker compose up --force-recreate."""
+    env = {**os.environ, "FAILURE_RATE": str(failure_rate), "LATENCY_MS": str(latency_ms)}
+    result = subprocess.run(
+        ["docker", "compose", "up", "-d", "--no-deps", "--force-recreate", service],
+        check=True,
+        capture_output=True,
+        env=env,
+    )
     print(f"  ✓ {service}: failure_rate={failure_rate}%, latency={latency_ms}ms")
 
 

@@ -25,7 +25,8 @@ from starlette.responses import Response
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── OpenTelemetry setup ────────────────────────────────────────────────────────
+
+# OTEL SETUP ie OPEN TELEMETRY
 SERVICE_NAME = os.getenv("SERVICE_NAME", "order-service")
 OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
@@ -35,7 +36,7 @@ provider.add_span_processor(BatchSpanProcessor(exporter))
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(SERVICE_NAME)
 
-# ── Prometheus metrics ─────────────────────────────────────────────────────────
+#PROM PROM SETUP
 REQUEST_COUNT = Counter(
     "order_requests_total", "Total order requests", ["method", "endpoint", "status"]
 )
