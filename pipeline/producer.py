@@ -68,7 +68,7 @@ async def health() -> dict[str, str]:
 async def prometheus_webhook(request: Request) -> dict[str, Any]:
     """
     Alertmanager webhook endpoint.
-
+    incidents.raw is basically a kafka topic
     Each alert in the payload is published individually to `incidents.raw`.
     """
     try:

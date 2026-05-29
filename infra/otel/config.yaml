@@ -31,16 +31,12 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: otel
 
-  # Export traces as logs (so Kafka pipeline can pick them up later)
-  file:
-    path: /tmp/traces.json
-
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [logging, file]
+      exporters: [logging]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]

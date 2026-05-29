@@ -33,7 +33,7 @@ tracer = trace.get_tracer(SERVICE_NAME)
 RESERVE_COUNT = Counter("inventory_reserves_total", "Reserve attempts", ["status"])
 RESERVE_LATENCY = Histogram("inventory_reserve_duration_seconds", "Reserve latency")
 
-# Fake in-memory inventory
+# Fake in-memory inventory, when container restarts, stocks reset to these
 STOCK = {"prod-001": 100, "prod-002": 50, "prod-003": 0}
 
 app = FastAPI(title="Inventory Service")

@@ -5,8 +5,8 @@ groups:
 
       - alert: HighPaymentFailureRate
         expr: |
-          rate(payment_failures_total[5m]) > 0.1
-        for: 1m
+          sum(rate(payment_failures_total[1m])) > 0.05
+        for: 30s
         labels:
           severity: critical
           service: payment-service

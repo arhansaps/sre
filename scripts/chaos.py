@@ -89,6 +89,9 @@ def cmd_status():
     print()
 
 
+
+    # does nothing but recreates the docker containers wiht the new env vars to wreak havok lolz
+    
 def cmd_spike_payments():
     print("\n── Spiking payment failures to 80% ────────────")
     set_env("payment-service", failure_rate=80, latency_ms=0)
