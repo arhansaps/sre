@@ -1,3 +1,6 @@
+#builds a text string from the alert, converts that text to a 384 number vector using the llm running locally
+#upserts the vector to pinecone
+
 """
 Pinecone sink: embed alert text locally and upsert vectors for semantic search.
 """

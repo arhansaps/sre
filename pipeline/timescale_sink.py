@@ -1,3 +1,5 @@
+#writes data to postgre along with timestamp to query later
+
 """
 TimescaleDB sink: persist normalised incident events as metrics and incident rows.
 """

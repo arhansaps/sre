@@ -1,3 +1,5 @@
+#obviously just creates the db schema and defines the tables
+
 """
 TimescaleDB connection helpers and schema bootstrap.
 
