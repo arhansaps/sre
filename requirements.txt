@@ -1,11 +1,12 @@
-# Core agent framework
+# Agent framework
 langgraph==0.1.4
 langchain==0.1.13
-langchain-google-genai==1.0.7
+langchain-openai==0.1.6
 langchain-community==0.0.29
 
-# LLM
-google-generativeai==0.7.2
+# LLM — AWS Bedrock via OpenAI-compatible API
+openai>=1.30.0
+aws-bedrock-token-generator
 
 # Data pipeline
 kafka-python==2.0.2

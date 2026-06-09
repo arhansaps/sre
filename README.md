@@ -1,3 +1,50 @@
+I would ask:
+
+How does retrieval actually improve RCA?
+
+What would make this genuinely exceptional
+
+Given your background, I'd integrate OpenTelemetry deeply.
+
+Right now:
+
+RAG over historical incidents
+
+is good.
+
+But this is stronger:
+
+Agent traverses OpenTelemetry traces,
+identifies the first failing span,
+maps dependency chains,
+correlates logs and metrics,
+then retrieves similar historical incidents.
+
+Diagnosed root cause correctly in 8/10 multi-service failure scenarios using trace correlation and historical incident retrieval.
+
+
+What guardrails exist?
+Can the model deploy arbitrary commands?
+What actions are allowed?
+How are approvals handled?
+How do you prevent hallucinated remediation?
+
+If your answer is:
+
+"The agent can only invoke predefined tools and all actions are audited."
+
+then great.
+
+If your answer is:
+
+"Claude decides what kubectl commands to run."
+
+then that's a red flag.
+
+think about this
+
+
+
 # Incident Response Autopilot
 
 > An LLM-powered SRE agent that detects production incidents, traces root cause across microservices, and auto-generates remediation runbooks and postmortems — without waking up a human at 3am.

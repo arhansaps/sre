@@ -112,7 +112,7 @@ def process_message(payload: dict[str, Any], producer: KafkaProducer) -> None:
         producer.send(
             TOPIC_NORMALISED,
             value=event.to_kafka_bytes(),
-            key=event.service.encode("utf-8"),
+            key=event.service,
         ).get(timeout=10)
     except KafkaError as exc:
         logger.error("Failed to publish to %s: %s", TOPIC_NORMALISED, exc)
