@@ -1,3 +1,6 @@
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
+
 from pipeline.db import get_connection
 from pipeline.schema import NormalisedEvent
 from agents.rca_agent import run_rca
