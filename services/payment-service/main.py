@@ -63,6 +63,11 @@ async def health():
     return {"status": "ok", "service": SERVICE_NAME}
 
 
+@app.get("/debug/config")
+async def debug_config():
+    return {"failure_rate": get_failure_rate(), "latency_ms": get_latency_ms()}
+
+
 @app.get("/metrics")
 async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

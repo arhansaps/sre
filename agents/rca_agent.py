@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Annotated, Literal
 
+import httpx
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
@@ -115,8 +116,36 @@ def search_similar_incidents(description: str, top_k: int = 5) -> str:
     return json.dumps(matches)
 
 
+SERVICE_PORTS = {
+    "order-service": 8001,
+    "payment-service": 8002,
+    "inventory-service": 8003,
+}
+
+
+@tool
+def check_service_config(service: str) -> str:
+    """
+    Check a service's current chaos-injection config (FAILURE_RATE, LATENCY_MS env vars)
+    via its /debug/config endpoint.
+
+    Use this to distinguish whether elevated failures/latency are caused by the
+    service's own configuration (an internal issue, fixable via restart/rollback)
+    versus a genuinely external dependency (where FAILURE_RATE/LATENCY_MS would be 0).
+    """
+    port = SERVICE_PORTS.get(service)
+    if port is None:
+        return json.dumps({"error": f"Unknown service: {service}"})
+    try:
+        resp = httpx.get(f"http://localhost:{port}/debug/config", timeout=3.0)
+        resp.raise_for_status()
+        return json.dumps(resp.json())
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 #whatever outputs recieved from querying:
-TOOLS = [query_recent_metrics, search_similar_incidents]
+TOOLS = [query_recent_metrics, search_similar_incidents, check_service_config]
 
 
 # ── System prompt ──────────────────────────────────────────────────────────────
@@ -125,15 +154,22 @@ SYSTEM_PROMPT = """\
 You are an expert SRE (Site Reliability Engineer) performing root cause analysis \
 for a production incident. Be systematic and evidence-based.
 
-You have two tools:
+You have three tools:
 - query_recent_metrics(service, minutes): fetch recent time-series data from TimescaleDB
 - search_similar_incidents(description, top_k): search incident history in Pinecone
+- check_service_config(service): check whether the service's own FAILURE_RATE/LATENCY_MS
+  config is elevated — if so, the root cause is internal to that service's configuration,
+  not an external dependency
 
 Investigation strategy:
 1. Query metrics for the affected service to see what spiked
-2. Search for similar past incidents to find historical precedent
-3. If the data implicates a dependency (e.g. downstream service), query its metrics too
-4. Stop when you have enough evidence to explain the root cause with confidence
+2. Check the affected service's own config via check_service_config — if FAILURE_RATE or
+   LATENCY_MS is non-zero, that service's own configuration is the root cause; only
+   suspect an external dependency if these are 0
+3. Search for similar past incidents to find historical precedent
+4. If the data implicates a dependency (e.g. downstream service), check its config and
+   metrics too
+5. Stop when you have enough evidence to explain the root cause with confidence
 
 Rules:
 - Never call a tool with the exact same name and arguments more than once — repeating an
@@ -283,7 +319,6 @@ def run_rca(event: NormalisedEvent) -> RCAResult:
         "event": event.model_dump(mode="json"),
         "iterations": 0,
         "rca": None,
-        "tool_call_log": [],
     })
 
     rca = final_state.get("rca") or {}

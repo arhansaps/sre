@@ -50,7 +50,7 @@ def rollback_config(service: str) -> dict:
     set_env(service, failure_rate=0, latency_ms=0)
     return {"status": "success", "detail": f"{service} configuration rolled back to last known good"}
 
-
+#not exactly doing any changes to the env vars unlike rollback or restart
 def scale_service(service: str, replicas: int = 2) -> dict:
     """Simulate scaling a service (no real infra change in this lab setup)."""
     logger.info("Simulated scale: %s -> %d replicas", service, replicas)
