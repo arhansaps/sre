@@ -50,6 +50,22 @@ CREATE INDEX IF NOT EXISTS idx_metrics_service_time
 
 CREATE INDEX IF NOT EXISTS idx_incidents_service_started
     ON incidents (service, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS remediation_actions (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id    TEXT NOT NULL,
+    service     TEXT,
+    root_cause  TEXT,
+    action      TEXT NOT NULL,
+    params      JSONB,
+    reasoning   TEXT,
+    outcome     JSONB,
+    success     BOOLEAN,
+    executed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_remediation_event
+    ON remediation_actions (event_id, executed_at DESC);
 """
 
 
@@ -107,6 +123,31 @@ def insert_metric(
             VALUES (%s, %s, %s, %s, %s)
             """,
             (time, service, metric_name, value, Json(labels or {})),
+        )
+
+
+def log_remediation_action(
+    conn: PgConnection,
+    *,
+    event_id: str,
+    service: str,
+    root_cause: str,
+    action: str,
+    params: dict,
+    reasoning: str,
+    outcome: dict,
+    success: bool,
+) -> None:
+    """Insert an audit row recording a remediation decision and its outcome."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO remediation_actions (
+                event_id, service, root_cause, action, params, reasoning, outcome, success
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (event_id, service, root_cause, action, Json(params), reasoning, Json(outcome), success),
         )
 
 

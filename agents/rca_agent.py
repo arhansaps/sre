@@ -18,11 +18,10 @@ from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Annotated, Literal
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -58,6 +57,7 @@ class RCAState(TypedDict):
     event: dict          # NormalisedEvent serialized — read-only context for nodes
     iterations: int
     rca: dict | None
+    tool_call_log: list[str]   # signatures of tool calls already executed, for dedup
 
 
 # ── Tools ──────────────────────────────────────────────────────────────────────
@@ -135,6 +135,13 @@ Investigation strategy:
 3. If the data implicates a dependency (e.g. downstream service), query its metrics too
 4. Stop when you have enough evidence to explain the root cause with confidence
 
+Rules:
+- Never call a tool with the exact same name and arguments more than once — repeating an
+  identical call will not return new information and wastes your limited iterations.
+- Aim to reach a conclusion within 4-6 tool calls total. If the evidence is inconclusive
+  after that, output your best-effort JSON with "confidence": "low" rather than continuing
+  to investigate.
+
 When you have finished your investigation, output ONLY a JSON object — no other text:
 {
   "root_cause": "one clear sentence describing what caused the incident",
@@ -154,7 +161,7 @@ def _get_bound_model():
 
 # ── Graph nodes ────────────────────────────────────────────────────────────────
 
-_tool_node = ToolNode(TOOLS)
+_TOOLS_BY_NAME = {t.name: t for t in TOOLS}
 
 
 def agent_node(state: RCAState) -> dict:
@@ -165,8 +172,38 @@ def agent_node(state: RCAState) -> dict:
     }
 
 
+def _tool_call_signature(name: str, args: dict) -> str:
+    return f"{name}({json.dumps(args, sort_keys=True)})"
+
+
 def tool_node(state: RCAState) -> dict:
-    return _tool_node.invoke(state)
+    """Execute pending tool calls, skipping any that exactly repeat a prior call."""
+    last = state["messages"][-1]
+    seen = set(state.get("tool_call_log", []))
+    new_signatures = []
+    tool_messages: list[ToolMessage] = []
+
+    for call in last.tool_calls:
+        signature = _tool_call_signature(call["name"], call["args"])
+        if signature in seen:
+            tool_messages.append(ToolMessage(
+                content=(
+                    f"[duplicate skipped] You already called {signature} earlier — "
+                    "the result was unchanged. Try different arguments or finalize "
+                    "your JSON answer now."
+                ),
+                tool_call_id=call["id"],
+            ))
+            continue
+
+        result = _TOOLS_BY_NAME[call["name"]].invoke(call["args"])
+        tool_messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))
+        new_signatures.append(signature)
+
+    return {
+        "messages": tool_messages,
+        "tool_call_log": [*seen, *new_signatures],
+    }
 
 
 def parse_node(state: RCAState) -> dict:
@@ -246,6 +283,7 @@ def run_rca(event: NormalisedEvent) -> RCAResult:
         "event": event.model_dump(mode="json"),
         "iterations": 0,
         "rca": None,
+        "tool_call_log": [],
     })
 
     rca = final_state.get("rca") or {}
