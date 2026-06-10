@@ -1,8 +1,8 @@
 # Agent framework
-langgraph==0.1.4
-langchain==0.1.13
-langchain-openai==0.1.6
-langchain-community==0.0.29
+langgraph>=0.1.4
+langchain>=0.2.0
+langchain-openai>=0.1.6
+langchain-community>=0.2.0
 
 # LLM — AWS Bedrock via OpenAI-compatible API
 openai>=1.30.0
