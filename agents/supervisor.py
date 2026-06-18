@@ -75,6 +75,12 @@ def handle_event(event: NormalisedEvent) -> None:
     remediation = run_remediation(rca)
     postmortem = run_postmortem(rca, remediation)
 
+    print("\n" + "=" * 60)
+    print("POSTMORTEM")
+    print("=" * 60)
+    print(postmortem.document)
+    print("=" * 60 + "\n")
+
     with get_connection() as conn:
         update_incident_result(
             conn,
