@@ -15,3 +15,9 @@ if not BEDROCK_PROJECT:
 AGENT_MODEL = os.getenv("AGENT_MODEL", "openai.gpt-oss-120b")
 AGENT_MAX_ITERATIONS = int(os.getenv("AGENT_MAX_ITERATIONS", "10"))
 AGENT_TEMPERATURE = float(os.getenv("AGENT_TEMPERATURE", "0"))
+
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "")
+SLACK_INCIDENT_CHANNEL = os.getenv("SLACK_INCIDENT_CHANNEL", "#incidents")
+
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+S3_POSTMORTEM_BUCKET = os.getenv("S3_POSTMORTEM_BUCKET", "")

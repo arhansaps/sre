@@ -5,7 +5,8 @@ Flow:
   Kafka (incidents.normalised)
       → [RCA agent]          diagnose root cause (TSDB metrics + Pinecone RAG + live config)
       → [Remediation agent]  pick and execute a whitelisted fix
-      → [TimescaleDB]         record root_cause + resolution on the incident row
+      → [Postmortem agent]   generate blameless postmortem → Slack + S3
+      → [TimescaleDB]        record root_cause + resolution on the incident row
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from typing import Any
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 
+from agents.postmortem_agent import run_postmortem
 from agents.rca_agent import run_rca
 from agents.remediation_agent import run_remediation
 from pipeline.config import KAFKA_BOOTSTRAP_SERVERS, TOPIC_NORMALISED, require_timescale
@@ -47,7 +49,7 @@ def _build_consumer() -> KafkaConsumer:
         TOPIC_NORMALISED,
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         group_id=CONSUMER_GROUP,
-        auto_offset_reset="earliest",
+        auto_offset_reset="latest",
         enable_auto_commit=True,
         value_deserializer=lambda m: m,
     )
@@ -71,6 +73,7 @@ def handle_event(event: NormalisedEvent) -> None:
 
     rca = run_rca(event)
     remediation = run_remediation(rca)
+    postmortem = run_postmortem(rca, remediation)
 
     with get_connection() as conn:
         update_incident_result(
@@ -90,6 +93,8 @@ def handle_event(event: NormalisedEvent) -> None:
             "confidence": rca.confidence,
             "action": remediation.action,
             "success": remediation.success,
+            "s3_key": postmortem.s3_key,
+            "slack_ts": postmortem.slack_ts,
         })
     )
 
