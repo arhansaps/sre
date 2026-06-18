@@ -151,6 +151,28 @@ def log_remediation_action(
         )
 
 
+def update_incident_result(
+    conn: PgConnection,
+    *,
+    event_id: str,
+    root_cause: str,
+    resolution: str,
+    resolved: bool,
+) -> None:
+    """Record the RCA root cause and remediation outcome for an incident."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE incidents
+            SET root_cause = %s,
+                resolution = %s,
+                resolved_at = CASE WHEN %s THEN now() ELSE resolved_at END
+            WHERE id = %s::uuid
+            """,
+            (root_cause, resolution, resolved, event_id),
+        )
+
+
 def upsert_incident_firing(
     conn: PgConnection,
     *,
